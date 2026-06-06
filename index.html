@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="コンディション">
+<meta name="theme-color" content="#f3f7ed">
+<title>コンディション設計</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f3f7ed;
+    --bg-2:#eaf0e0;
+    --surface:#ffffff;
+    --surface-2:#f1f5ea;
+    --line:#e2e9d6;
+    --text:#2a3320;
+    --text-dim:#6f7a60;
+    --text-faint:#9aa489;
+    --accent:#74bd28;          /* en fresh green */
+    --accent-soft:#eaf5d8;
+    --accent-deep:#5a9a1c;
+    --good:#74bd28;
+    --ok:#e0b23a;
+    --low:#e08a5a;
+    --radius:18px;
+    --shadow:0 8px 24px rgba(70,95,45,.09);
+    --serif:'Fraunces',Georgia,'Hiragino Mincho ProN',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Hiragino Sans','Noto Sans JP','Yu Gothic',sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(130% 80% at 85% -10%, rgba(116,189,40,.10), transparent 55%),
+      radial-gradient(100% 55% at 0% 108%, rgba(116,189,40,.06), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:88px;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:0 18px;}
+
+  header{padding:max(env(safe-area-inset-top),22px) 0 8px;}
+  .head-row{display:flex;align-items:baseline;justify-content:space-between;}
+  .date-day{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:.5px;line-height:1;color:var(--text);}
+  .date-sub{color:var(--text-dim);font-size:13px;margin-top:6px;letter-spacing:.04em;}
+  .date-nav{display:flex;gap:6px;}
+  .date-nav button{
+    background:var(--surface);border:1px solid var(--line);color:var(--text-dim);
+    width:38px;height:38px;border-radius:11px;font-size:17px;display:grid;place-items:center;cursor:pointer;}
+  .date-nav button:active{background:var(--surface-2);}
+  .today-pill{font-size:11px;color:var(--accent-deep);border:1px solid var(--accent);background:var(--accent-soft);
+    padding:3px 9px;border-radius:999px;margin-left:8px;letter-spacing:.06em;}
+  .goal-line{display:flex;align-items:center;gap:8px;margin-top:14px;padding:9px 13px;
+    background:var(--accent-soft);border:1px solid #d8ecbd;border-radius:12px;}
+  .goal-leaf{flex:none;color:var(--accent-deep);font-size:13px;}
+  .goal-text{flex:1;font-size:13px;color:var(--accent-deep);font-weight:500;outline:none;min-width:0;}
+  .goal-text:empty:before{content:'めざす姿を一言（タップで編集）';color:var(--text-faint);font-weight:400;}
+
+  .view{display:none;animation:fade .35s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .section-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);
+    margin:26px 2px 10px;font-weight:600;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;}
+  .habit{display:flex;align-items:center;gap:14px;padding:15px 16px;cursor:pointer;
+    border-bottom:1px solid var(--line);transition:background .15s;}
+  .habit:last-child{border-bottom:none;}
+  .habit:active{background:var(--surface-2);}
+  .habit.on{background:linear-gradient(90deg,rgba(116,189,40,.10),rgba(116,189,40,.02));}
+  .check{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);
+    display:grid;place-items:center;transition:all .2s;background:var(--bg);}
+  .habit.on .check{background:var(--accent);border-color:var(--accent);}
+  .check svg{width:16px;height:16px;opacity:0;transform:scale(.5);transition:all .2s;}
+  .habit.on .check svg{opacity:1;transform:scale(1);}
+  .habit-text{flex:1;min-width:0;}
+  .habit-name{font-size:16px;font-weight:500;}
+  .habit-hint{font-size:12px;color:var(--text-dim);margin-top:1px;}
+  .bonus-tag{font-size:10px;color:var(--text-faint);border:1px solid var(--line);
+    padding:1px 6px;border-radius:6px;margin-left:7px;vertical-align:middle;letter-spacing:.05em;}
+
+  .train-head{display:flex;align-items:center;gap:14px;padding:15px 16px;cursor:pointer;}
+  .train-head:active{background:var(--surface-2);}
+  .train-title{flex:1;font-size:16px;font-weight:500;}
+  .train-count{font-size:12px;color:var(--accent-deep);font-variant-numeric:tabular-nums;}
+  .chev{transition:transform .25s;color:var(--text-dim);font-size:13px;}
+  .train.open .chev{transform:rotate(180deg);}
+  .train-body{max-height:0;overflow:hidden;transition:max-height .3s ease;border-top:1px solid transparent;}
+  .train.open .train-body{max-height:520px;border-top-color:var(--line);}
+  .ex{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .ex:last-child{border-bottom:none;}
+  .ex:active{background:var(--surface-2);}
+  .ex .check{width:26px;height:26px;}
+  .ex.on .check{background:var(--accent);border-color:var(--accent);}
+  .ex-name{flex:1;font-size:15px;}
+  .ex-target{font-size:13px;color:var(--text-dim);font-variant-numeric:tabular-nums;
+    background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:4px 9px;min-width:62px;text-align:center;}
+  .ex-target:focus{outline:none;border-color:var(--accent);color:var(--text);}
+
+  /* sleep + condition */
+  .sleep-row{display:flex;align-items:flex-end;gap:10px;}
+  .sleep-field{flex:1;min-width:0;}
+  .sleep-sep{color:var(--text-faint);font-size:18px;padding-bottom:6px;}
+  .tile-label{font-size:12px;color:var(--text-dim);margin-bottom:6px;letter-spacing:.04em;}
+  input[type=time]{background:transparent;border:none;color:var(--text);font-family:var(--serif);
+    font-size:26px;font-weight:500;width:100%;padding:0;font-variant-numeric:tabular-nums;}
+  .sleep-dur{flex:none;text-align:right;padding-bottom:2px;}
+  .sleep-dur .num{font-family:var(--serif);font-size:22px;color:var(--accent-deep);font-weight:600;}
+  .sleep-dur .lbl{font-size:10px;color:var(--text-faint);display:block;letter-spacing:.05em;}
+  .bed-hint{font-size:11px;color:var(--text-faint);margin-top:12px;}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;box-shadow:var(--shadow);}
+  .cond-faces{display:flex;justify-content:space-between;gap:6px;margin-top:2px;}
+  .face{flex:1;aspect-ratio:1;border-radius:12px;border:1px solid var(--line);background:var(--bg);
+    display:grid;place-items:center;font-size:11px;color:var(--text-dim);cursor:pointer;padding:6px 2px;transition:all .18s;line-height:1.2;text-align:center;}
+  .face:active{transform:scale(.94);}
+  .face.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-deep);font-weight:600;}
+  .face .dot{display:block;width:9px;height:9px;border-radius:50%;margin:0 auto 5px;background:var(--text-faint);}
+  .face.sel .dot{background:var(--accent);}
+
+  .daysum{display:flex;align-items:center;gap:12px;margin-top:14px;padding:14px 16px;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+  .daysum-text{font-size:13px;color:var(--text-dim);}
+  .daysum-text b{color:var(--text);font-weight:600;}
+
+  .grid-head{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px;}
+  .grid-range{font-family:var(--serif);font-size:18px;}
+  table.grid{width:100%;border-collapse:collapse;}
+  table.grid th,table.grid td{text-align:center;padding:0;}
+  table.grid thead th{font-size:11px;color:var(--text-faint);font-weight:600;padding-bottom:9px;}
+  table.grid thead th.lbl{text-align:left;}
+  table.grid th.dow.today{color:var(--accent-deep);}
+  .rname{text-align:left;font-size:13px;color:var(--text-dim);padding:7px 8px 7px 0;white-space:nowrap;font-weight:500;}
+  .cell{width:30px;height:30px;}
+  .cdot{width:24px;height:24px;border-radius:8px;margin:0 auto;background:var(--bg-2);border:1px solid var(--line);
+    display:grid;place-items:center;font-size:11px;color:#fff;font-weight:700;}
+  .cdot.f{background:var(--accent);border-color:var(--accent);}
+  .cdot.cond{font-family:var(--sans);}
+  .cdot.bed{font-size:9px;font-variant-numeric:tabular-nums;background:var(--surface-2);border-color:var(--line);color:var(--text-dim);width:auto;padding:0 5px;border-radius:7px;}
+  .cap{font-size:11px;color:var(--text-faint);margin-top:14px;text-align:center;letter-spacing:.04em;}
+
+  .chart-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 16px 14px;box-shadow:var(--shadow);}
+  .chart-title{font-size:14px;font-weight:600;margin-bottom:2px;}
+  .chart-sub{font-size:12px;color:var(--text-dim);margin-bottom:14px;}
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--text-dim);margin-top:10px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .rate-row{display:flex;align-items:center;gap:12px;margin:11px 0;}
+  .rate-name{font-size:13px;width:120px;flex:none;color:var(--text-dim);}
+  .rate-bar{flex:1;height:9px;background:var(--bg-2);border-radius:999px;overflow:hidden;border:1px solid var(--line);}
+  .rate-fill{height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent));border-radius:999px;transition:width .6s ease;}
+  .rate-pct{font-size:13px;width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text);}
+  .insight{background:linear-gradient(135deg,var(--accent-soft),var(--surface));border:1px solid #d8ecbd;
+    border-radius:14px;padding:14px 16px;font-size:13px;color:var(--text);margin-top:16px;line-height:1.6;}
+  .insight b{color:var(--accent-deep);}
+
+  .set-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);}
+  .set-row:last-child{border-bottom:none;}
+  .set-name{font-size:14px;}
+  .set-desc{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .btn{background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-size:13px;
+    padding:9px 14px;border-radius:11px;cursor:pointer;font-family:var(--sans);}
+  .btn:active{background:var(--line);}
+  .btn.accent{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+  textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:12px;
+    padding:12px;font-size:12px;font-family:ui-monospace,monospace;min-height:120px;margin-top:10px;resize:vertical;}
+  .warn{font-size:12px;color:var(--low);margin-top:10px;line-height:1.5;}
+
+  nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.85);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);
+    padding:8px 0 max(env(safe-area-inset-bottom),10px);z-index:50;}
+  .nav-inner{max-width:520px;margin:0 auto;display:flex;}
+  .nav-btn{flex:1;background:none;border:none;color:var(--text-faint);font-family:var(--sans);
+    font-size:10px;letter-spacing:.04em;padding:4px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .nav-btn.active{color:var(--accent-deep);}
+  .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--accent);color:#fff;padding:9px 18px;border-radius:999px;font-size:13px;font-weight:600;
+    opacity:0;transition:all .3s;z-index:99;pointer-events:none;box-shadow:var(--shadow);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="head-row">
+      <div>
+        <div class="date-day" id="dDay"></div>
+        <div class="date-sub" id="dSub"></div>
+      </div>
+      <div class="date-nav">
+        <button id="prevDay">&lsaquo;</button>
+        <button id="nextDay">&rsaquo;</button>
+      </div>
+    </div>
+    <div class="goal-line">
+      <span class="goal-leaf">&#9670;</span>
+      <div class="goal-text" id="goalText" contenteditable="true"></div>
+    </div>
+  </header>
+
+  <!-- TODAY -->
+  <section class="view active" id="view-today">
+    <div class="section-label">今日のコア</div>
+    <div class="card" id="coreCard"></div>
+
+    <div class="section-label">トレ・読書 <span style="color:var(--text-faint);font-weight:400;text-transform:none;letter-spacing:0;">ボーナス</span></div>
+    <div class="card">
+      <div class="train" id="trainBlock">
+        <div class="train-head" id="trainHead">
+          <div class="check" id="trainCheck"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><path d="M5 13l4 4L19 7"/></svg></div>
+          <div class="train-title">自重トレ</div>
+          <span class="train-count" id="trainCount"></span>
+          <span class="chev">&#9662;</span>
+        </div>
+        <div class="train-body" id="exList"></div>
+      </div>
+      <div id="readingMount"></div>
+    </div>
+
+    <div class="section-label">睡眠と調子</div>
+    <div class="tile">
+      <div class="sleep-row">
+        <div class="sleep-field"><div class="tile-label">就寝</div><input type="time" id="bedInput"></div>
+        <div class="sleep-sep">&rarr;</div>
+        <div class="sleep-field"><div class="tile-label">起床</div><input type="time" id="wakeInput"></div>
+        <div class="sleep-dur"><span class="num" id="durNum">--</span><span class="lbl">睡眠</span></div>
+      </div>
+      <div class="bed-hint" id="bedHint"></div>
+    </div>
+    <div class="tile" style="margin-top:12px;">
+      <div class="tile-label">日中の眠気・調子</div>
+      <div class="cond-faces" id="condFaces"></div>
+    </div>
+
+    <div class="daysum" id="daySum"></div>
+  </section>
+
+  <!-- WEEKLY -->
+  <section class="view" id="view-week">
+    <div class="grid-head">
+      <button class="btn" id="wPrev" style="width:38px;height:38px;border-radius:11px;padding:0;">&lsaquo;</button>
+      <div class="grid-range" id="wRange"></div>
+      <button class="btn" id="wNext" style="width:38px;height:38px;border-radius:11px;padding:0;">&rsaquo;</button>
+    </div>
+    <div class="card" style="padding:14px 14px 10px;overflow-x:auto;">
+      <table class="grid" id="weekGrid"></table>
+    </div>
+    <div class="cap">この画面をスクショ &rarr; チャットに貼って叱咤激励をもらう運用です</div>
+  </section>
+
+  <!-- TRENDS -->
+  <section class="view" id="view-trends">
+    <div class="section-label">就寝時刻 × 調子（過去14日）</div>
+    <div class="chart-card">
+      <div class="chart-title">早く寝た翌日は、調子がいい？</div>
+      <div class="chart-sub">点の色＝その日の調子。下にあるほど早寝。</div>
+      <div id="bedChart"></div>
+      <div class="legend">
+        <span><i style="background:var(--low)"></i>ぐったり</span>
+        <span><i style="background:var(--ok)"></i>ふつう</span>
+        <span><i style="background:var(--good)"></i>スッキリ</span>
+        <span><i style="background:var(--text-faint)"></i>調子未記録</span>
+      </div>
+    </div>
+
+    <div class="section-label">項目別の達成率（過去30日）</div>
+    <div class="chart-card" id="rateCard"></div>
+
+    <div class="insight" id="insight"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-set">
+    <div class="section-label">トレの目標値</div>
+    <div class="card" id="targetSettings" style="padding:4px 0;"></div>
+    <div class="cap" style="text-align:left;margin:8px 2px;">記録は○×のまま。強くなったらここの数字だけ上げてください。</div>
+
+    <div class="section-label">データ（バックアップ）</div>
+    <div class="card" style="padding:4px 0;">
+      <div class="set-row">
+        <div><div class="set-name">書き出し</div><div class="set-desc">全データをコピー or 保存</div></div>
+        <button class="btn" id="exportBtn">書き出す</button>
+      </div>
+      <div class="set-row">
+        <div><div class="set-name">読み込み</div><div class="set-desc">下の枠に貼って復元</div></div>
+        <button class="btn accent" id="importBtn">読み込む</button>
+      </div>
+    </div>
+    <textarea id="dataArea" placeholder="ここにデータが表示されます / 復元用JSONを貼り付け"></textarea>
+    <div class="warn" id="storeWarn"></div>
+    <div class="cap" style="text-align:left;margin-top:18px;line-height:1.6;">
+      保存は端末内です。<br>ホーム画面に追加するとアプリのように使えます（共有 &rarr; ホーム画面に追加）。<br>
+      最優先は睡眠と日中の活動。読書・トレはボーナス。今週は2〜3個だけ見れば十分です。
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <div class="nav-inner">
+    <button class="nav-btn active" data-v="today"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>今日</button>
+    <button class="nav-btn" data-v="week"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>週間</button>
+    <button class="nav-btn" data-v="trends"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 5-7 4 5"/></svg>推移</button>
+    <button class="nav-btn" data-v="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>設定</button>
+  </div>
+</nav>
+
+<script>
+"use strict";
+var DEFAULT_WAKE='07:10';
+var DEFAULT_GOAL='日中スッキリ、長く健康に。';
+var HABITS=[
+  {id:'morning_light', name:'朝の光',           hint:'起床1時間以内に屋外光（送迎の徒歩でOK）'},
+  {id:'walk',          name:'昼10分散歩',        hint:'昼休みに外へ'},
+  {id:'no_sitting',    name:'1時間以上座らない',  hint:'立ったら30秒〜2分だけ動く'},
+  {id:'coffee_squat',  name:'コーヒースクワット', hint:'ドリップ中に10〜15回'}
+];
+var READING={id:'reading', name:'読書', hint:'1ページでもOK'};
+var EXERCISES=[
+  {id:'squat',   name:'スクワット',       def:'×10'},
+  {id:'pushup',  name:'腕立て',           def:'×5〜10'},
+  {id:'hip_lift',name:'ヒップリフト',     def:'×12'},
+  {id:'plank',   name:'プランク',         def:'20〜30秒'},
+  {id:'knee_up', name:'もも上げ・踏み台', def:'30〜45秒'}
+];
+var COND_LEVELS=[
+  {v:1, label:'ぐったり', color:'var(--low)'},
+  {v:2, label:'眠い',     color:'var(--low)'},
+  {v:3, label:'ふつう',   color:'var(--ok)'},
+  {v:4, label:'良い',     color:'var(--good)'},
+  {v:5, label:'スッキリ', color:'var(--good)'}
+];
+var KEY='conditionTracker_v1';
+
+var memFallback=false;
+function loadState(){
+  var raw=null;
+  try{ raw=localStorage.getItem(KEY); }catch(e){ memFallback=true; }
+  var s=raw?JSON.parse(raw):null;
+  if(!s) s={days:{}, settings:{targets:{}}};
+  if(!s.days) s.days={};
+  if(!s.settings) s.settings={};
+  if(!s.settings.targets) s.settings.targets={};
+  if(!('goal' in s.settings)) s.settings.goal=DEFAULT_GOAL;
+  EXERCISES.forEach(function(e){ if(!(e.id in s.settings.targets)) s.settings.targets[e.id]=e.def; });
+  return s;
+}
+function saveState(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ memFallback=true; } }
+var state=loadState();
+
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+var DOW=['日','月','火','水','木','金','土'];
+var cursor=new Date(); cursor.setHours(0,0,0,0);
+var weekOffset=0;
+
+function getDay(key){
+  if(!state.days[key]) state.days[key]={habits:{},training:{},bedtime:null,wake:null,condition:null};
+  var d=state.days[key];
+  if(!d.habits) d.habits={};
+  if(!d.training) d.training={};
+  return d;
+}
+function checkSVG(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'; }
+
+var toastT;
+function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove('show');},1400); }
+
+function sleepDur(bed,wake){
+  if(!bed||!wake) return null;
+  var bp=bed.split(':'), wp=wake.split(':');
+  var b=(+bp[0])*60+(+bp[1]), w=(+wp[0])*60+(+wp[1]);
+  if(b>w) w+=1440;
+  var d=w-b; if(d<0) d+=1440; if(d>1440) d-=1440;
+  return d;
+}
+function fmtDurJ(min){ var h=Math.floor(min/60), m=min%60; return h+'h'+(m<10?'0'+m:m); }
+
+function renderHeader(){
+  var isToday = ymd(cursor)===ymd(new Date());
+  document.getElementById('dDay').textContent=(cursor.getMonth()+1)+'.'+cursor.getDate();
+  document.getElementById('dSub').innerHTML=
+    cursor.getFullYear()+'年'+(cursor.getMonth()+1)+'月'+cursor.getDate()+'日（'+DOW[cursor.getDay()]+'）'
+    +(isToday?'<span class="today-pill">TODAY</span>':'');
+  document.getElementById('nextDay').style.opacity=isToday?.35:1;
+  var g=document.getElementById('goalText');
+  if(document.activeElement!==g) g.textContent=state.settings.goal||'';
+}
+
+function lastBedtime(){
+  var d=new Date(cursor);
+  for(var i=0;i<10;i++){ d.setDate(d.getDate()-1); var dd=state.days[ymd(d)]; if(dd&&dd.bedtime) return dd.bedtime; }
+  return null;
+}
+
+function renderToday(){
+  renderHeader();
+  var key=ymd(cursor); var day=getDay(key);
+
+  var core=document.getElementById('coreCard');
+  core.innerHTML=HABITS.map(function(h){
+    var on=!!day.habits[h.id];
+    return '<div class="habit'+(on?' on':'')+'" data-h="'+h.id+'"><div class="check">'+checkSVG()+'</div>'
+      +'<div class="habit-text"><div class="habit-name">'+h.name+'</div><div class="habit-hint">'+h.hint+'</div></div></div>';
+  }).join('');
+  core.querySelectorAll('.habit').forEach(function(el){ el.onclick=function(){ var id=el.dataset.h; day.habits[id]=!day.habits[id]; saveState(); renderToday(); }; });
+
+  var exList=document.getElementById('exList');
+  exList.innerHTML=EXERCISES.map(function(e){
+    var on=!!day.training[e.id];
+    return '<div class="ex'+(on?' on':'')+'" data-e="'+e.id+'"><div class="check">'+checkSVG()+'</div>'
+      +'<div class="ex-name">'+e.name+'</div>'
+      +'<div class="ex-target" data-tgt="'+e.id+'" contenteditable="true">'+(state.settings.targets[e.id]||e.def)+'</div></div>';
+  }).join('');
+  exList.querySelectorAll('.ex').forEach(function(el){
+    el.onclick=function(ev){ if(ev.target.classList.contains('ex-target')) return; var id=el.dataset.e; day.training[id]=!day.training[id]; saveState(); renderToday(); };
+  });
+  exList.querySelectorAll('.ex-target').forEach(function(el){
+    el.onclick=function(ev){ ev.stopPropagation(); };
+    el.onblur=function(){ state.settings.targets[el.dataset.tgt]=el.textContent.trim()||'—'; saveState(); };
+    el.onkeydown=function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); el.blur(); } };
+  });
+  var doneEx=EXERCISES.filter(function(e){return day.training[e.id];}).length;
+  document.getElementById('trainCount').textContent=doneEx>0?(doneEx+' / '+EXERCISES.length+' 種目'):'';
+  document.getElementById('trainCheck').style.cssText=doneEx>0?'background:var(--accent);border-color:var(--accent);':'';
+
+  var rm=document.getElementById('readingMount');
+  var ron=!!day.habits[READING.id];
+  rm.innerHTML='<div class="habit'+(ron?' on':'')+'" data-h="'+READING.id+'" style="border-top:1px solid var(--line)"><div class="check">'+checkSVG()+'</div>'
+    +'<div class="habit-text"><div class="habit-name">'+READING.name+'<span class="bonus-tag">任意</span></div><div class="habit-hint">'+READING.hint+'</div></div></div>';
+  rm.querySelector('.habit').onclick=function(){ day.habits[READING.id]=!day.habits[READING.id]; saveState(); renderToday(); };
+
+  var bed=document.getElementById('bedInput');
+  var wake=document.getElementById('wakeInput');
+  bed.value=day.bedtime||lastBedtime()||'00:30';
+  wake.value=day.wake||DEFAULT_WAKE;
+  bed.onchange=function(){ day.bedtime=bed.value; saveState(); toast('就寝 '+bed.value); renderToday(); };
+  wake.onchange=function(){ day.wake=wake.value; saveState(); renderToday(); };
+  var dur=sleepDur(bed.value, wake.value);
+  document.getElementById('durNum').textContent= dur!=null? fmtDurJ(dur):'--';
+  document.getElementById('bedHint').textContent= day.bedtime? '目安は就寝の前倒し（24:30 → 24:00）。起床は7:10基準、違う日だけ直せばOK。' : '翌朝に補完でOK（前回の就寝時刻を表示中）。起床は7:10が初期値。';
+
+  var cf=document.getElementById('condFaces');
+  cf.innerHTML=COND_LEVELS.map(function(c){
+    var sel=day.condition===c.v;
+    return '<div class="face'+(sel?' sel':'')+'" data-c="'+c.v+'"><span class="dot" style="'+(sel?('background:'+c.color):'')+'"></span>'+c.label+'</div>';
+  }).join('');
+  cf.querySelectorAll('.face').forEach(function(el){ el.onclick=function(){ var v=+el.dataset.c; day.condition=(day.condition===v?null:v); saveState(); renderToday(); }; });
+
+  var total=HABITS.length, done=HABITS.filter(function(h){return day.habits[h.id];}).length;
+  var c=2*Math.PI*22, off=c*(1-done/total);
+  document.getElementById('daySum').innerHTML=
+    '<div><svg width="46" height="46"><circle cx="23" cy="23" r="22" fill="none" stroke="var(--line)" stroke-width="4"/>'
+    +'<circle cx="23" cy="23" r="22" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" transform="rotate(-90 23 23)"/></svg></div>'
+    +'<div class="daysum-text">コア習慣 <b>'+done+'/'+total+'</b> 達成'+(done===total?'　— 今日はばっちり。':'')+(day.bedtime?'':'<br>就寝時刻はまだ未入力です。')+'</div>';
+}
+
+document.getElementById('trainHead').onclick=function(){ document.getElementById('trainBlock').classList.toggle('open'); };
+(function(){ var g=document.getElementById('goalText');
+  g.onblur=function(){ state.settings.goal=g.textContent.trim(); saveState(); };
+  g.onkeydown=function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); g.blur(); } };
+})();
+
+function weekStart(off){ var d=new Date(); d.setHours(0,0,0,0); var wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd+off*7); return d; }
+function renderWeek(){
+  var start=weekStart(weekOffset);
+  var days=[]; for(var i=0;i<7;i++){ var x=new Date(start); x.setDate(start.getDate()+i); days.push(x); }
+  var todayKey=ymd(new Date());
+  document.getElementById('wRange').textContent=(start.getMonth()+1)+'/'+start.getDate()+' 〜 '+(days[6].getMonth()+1)+'/'+days[6].getDate();
+  document.getElementById('wNext').style.opacity=weekOffset>=0?.35:1;
+
+  var rows=HABITS.map(function(h){return {name:h.name,type:'h',id:h.id};});
+  rows.push({name:'読書',type:'h',id:'reading'});
+  rows.push({name:'トレ',type:'train'});
+  rows.push({name:'調子',type:'cond'});
+  rows.push({name:'就寝',type:'bed'});
+  rows.push({name:'睡眠',type:'dur'});
+
+  var html='<thead><tr><th class="lbl"></th>'
+    +days.map(function(d){return '<th class="dow'+(ymd(d)===todayKey?' today':'')+'">'+DOW[d.getDay()]+'<br>'+d.getDate()+'</th>';}).join('')+'</tr></thead><tbody>';
+  rows.forEach(function(r){
+    html+='<tr><td class="rname">'+r.name+'</td>';
+    days.forEach(function(d){
+      var dd=state.days[ymd(d)]; var cell='<div class="cdot"></div>';
+      if(dd){
+        if(r.type==='h'){ if(dd.habits&&dd.habits[r.id]) cell='<div class="cdot f">'+checkSVG()+'</div>'; }
+        else if(r.type==='train'){ var n=dd.training?Object.values(dd.training).filter(Boolean).length:0; if(n>0) cell='<div class="cdot f cond">'+n+'</div>'; }
+        else if(r.type==='cond'){ if(dd.condition){ var cc=COND_LEVELS[dd.condition-1]; cell='<div class="cdot cond" style="background:'+cc.color+';border-color:'+cc.color+';color:#fff;">'+dd.condition+'</div>'; } }
+        else if(r.type==='bed'){ if(dd.bedtime) cell='<div class="cdot bed">'+dd.bedtime+'</div>'; }
+        else if(r.type==='dur'){ if(dd.bedtime){ var du=sleepDur(dd.bedtime, dd.wake||DEFAULT_WAKE); if(du!=null) cell='<div class="cdot bed">'+fmtDurJ(du)+'</div>'; } }
+      }
+      html+='<td class="cell">'+cell+'</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody>';
+  document.getElementById('weekGrid').innerHTML=html;
+}
+
+function bedMinutes(t){ var p=t.split(':'); var h=+p[0],m=+p[1]; var mins=h*60+m; if(h<12) mins+=1440; return mins-18*60; }
+function renderTrends(){
+  var N=14, today=new Date(); today.setHours(0,0,0,0);
+  var pts=[];
+  for(var i=N-1;i>=0;i--){ var d=new Date(today); d.setDate(today.getDate()-i); var dd=state.days[ymd(d)];
+    pts.push({date:d, bed:(dd&&dd.bedtime)?bedMinutes(dd.bedtime):null, cond:dd?dd.condition:null}); }
+  var valid=pts.filter(function(p){return p.bed!=null;});
+  var W=300,H=150,PADL=34,PADB=22,PADT=10,PADR=8;
+  var chart;
+  if(valid.length<2){
+    chart='<div style="color:var(--text-faint);font-size:13px;text-align:center;padding:30px 0;">就寝時刻が2日分そろうとグラフが出ます。</div>';
+  } else {
+    var vals=valid.map(function(p){return p.bed;});
+    var min=Math.min.apply(null,vals.concat([300])), max=Math.max.apply(null,vals.concat([390]));
+    var pad=(max-min)*0.2||30; min-=pad; max+=pad;
+    var X=function(idx){ return PADL+(W-PADL-PADR)*(idx/(N-1)); };
+    var Y=function(v){ return PADT+(H-PADT-PADB)*((v-min)/(max-min)); };
+    var tgt=bedMinutes('00:30');
+    var idxValid=[]; pts.forEach(function(p,k){ if(p.bed!=null) idxValid.push({bed:p.bed,cond:p.cond,i:k}); });
+    var path='',dots='';
+    idxValid.forEach(function(p,k){ var px=X(p.i), py=Y(p.bed); path+=(k===0?'M':'L')+px.toFixed(1)+' '+py.toFixed(1)+' ';
+      var col=p.cond?COND_LEVELS[p.cond-1].color:'var(--text-faint)';
+      dots+='<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="4.5" fill="'+col+'" stroke="var(--surface)" stroke-width="1.5"/>'; });
+    var tgtY=(tgt>min&&tgt<max)?Y(tgt):null;
+    function minToLabel(v){ var t=v+18*60; var h=Math.floor(t/60)%24, m=t%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+    var ylab=''; [min,(min+max)/2,max].forEach(function(v){ var py=Y(v); ylab+='<text x="'+(PADL-6)+'" y="'+(py+3)+'" text-anchor="end" font-size="9" fill="var(--text-faint)">'+minToLabel(v)+'</text>'; });
+    chart='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;">'+ylab
+      +(tgtY!=null?'<line x1="'+PADL+'" y1="'+tgtY+'" x2="'+(W-PADR)+'" y2="'+tgtY+'" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/><text x="'+(W-PADR)+'" y="'+(tgtY-4)+'" text-anchor="end" font-size="8" fill="var(--accent-deep)" opacity=".9">目安 24:30</text>':'')
+      +'<path d="'+path+'" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" opacity=".5"/>'+dots+'</svg>'
+      +'<div style="font-size:10px;color:var(--text-faint);text-align:center;margin-top:-4px;">&darr; 下にあるほど早寝</div>';
+  }
+  document.getElementById('bedChart').innerHTML=chart;
+
+  var M=30;
+  var items=HABITS.slice(); items.push({id:'reading',name:'読書'}); items.push({id:'__train',name:'トレ'});
+  var counts={}; items.forEach(function(it){counts[it.id]=0;});
+  var denom=0;
+  for(var j=0;j<M;j++){ var dd2date=new Date(today); dd2date.setDate(today.getDate()-j); if(dd2date>today) continue; denom++;
+    var dd2=state.days[ymd(dd2date)];
+    if(dd2){ HABITS.forEach(function(h){ if(dd2.habits&&dd2.habits[h.id]) counts[h.id]++; });
+      if(dd2.habits&&dd2.habits.reading) counts['reading']++;
+      if(dd2.training&&Object.values(dd2.training).some(Boolean)) counts['__train']++; } }
+  document.getElementById('rateCard').innerHTML=items.map(function(it){ var pct=denom?Math.round(counts[it.id]/denom*100):0;
+    return '<div class="rate-row"><div class="rate-name">'+it.name+'</div><div class="rate-bar"><div class="rate-fill" style="width:'+pct+'%"></div></div><div class="rate-pct">'+pct+'%</div></div>'; }).join('');
+
+  document.getElementById('insight').innerHTML=buildInsight(pts);
+}
+function buildInsight(pts){
+  var withBoth=pts.filter(function(p){return p.bed!=null&&p.cond!=null;});
+  if(withBoth.length<4) return '<b>記録のヒント：</b>就寝時刻と調子が4日ぶん以上たまると、「早寝＝好調」の関係が見えてきます。まずは夜の1タップを続けてみましょう。';
+  var sorted=withBoth.map(function(p){return p.bed;}).sort(function(a,b){return a-b;});
+  var med=sorted[Math.floor(withBoth.length/2)];
+  var early=withBoth.filter(function(p){return p.bed<=med;}), late=withBoth.filter(function(p){return p.bed>med;});
+  function avg(arr){ var s=0; arr.forEach(function(p){s+=p.cond;}); return s/arr.length; }
+  if(early.length&&late.length){
+    var ce=avg(early).toFixed(1), cl=avg(late).toFixed(1);
+    if(ce>cl) return '<b>いい傾向：</b>早く寝た日の調子は平均 <b>'+ce+'</b>、遅い日は '+cl+'。早寝がちゃんと効いています。この調子で就寝の前倒しを。';
+    if(ce<cl) return '早寝の日（調子 '+ce+'）と遅寝の日（'+cl+'）で、まだ差がはっきり出ていません。睡眠時間だけでなく朝の光や日中の活動も合わせて見ていきましょう。';
+    return '早寝・遅寝で調子の差はまだ僅か。記録を続けると傾向がはっきりしてきます。';
+  }
+  return '記録、着実にたまっています。';
+}
+
+function renderSettings(){
+  var ts=document.getElementById('targetSettings');
+  ts.innerHTML=EXERCISES.map(function(e){ return '<div class="set-row"><div class="set-name">'+e.name+'</div><div class="ex-target" data-stgt="'+e.id+'" contenteditable="true">'+(state.settings.targets[e.id]||e.def)+'</div></div>'; }).join('');
+  ts.querySelectorAll('.ex-target').forEach(function(el){
+    el.onblur=function(){ state.settings.targets[el.dataset.stgt]=el.textContent.trim()||'—'; saveState(); };
+    el.onkeydown=function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); el.blur(); } };
+  });
+  document.getElementById('storeWarn').textContent=memFallback?'※ いまの環境では自動保存が無効です（Claudeのプレビュー内など）。ダウンロードして自分のブラウザで開くと保存されます。':'';
+}
+document.getElementById('exportBtn').onclick=function(){
+  var json=JSON.stringify(state,null,2);
+  document.getElementById('dataArea').value=json;
+  if(navigator.clipboard){ navigator.clipboard.writeText(json).then(function(){toast('コピーしました');}).catch(function(){}); } else toast('下の枠を全選択してコピー');
+};
+document.getElementById('importBtn').onclick=function(){
+  var v=document.getElementById('dataArea').value.trim(); if(!v){ toast('JSONを貼り付けて'); return; }
+  try{ var obj=JSON.parse(v); if(!obj.days) throw 0; state=obj; if(!state.settings) state.settings={targets:{}}; if(!state.settings.targets) state.settings.targets={};
+    if(!('goal' in state.settings)) state.settings.goal=DEFAULT_GOAL;
+    EXERCISES.forEach(function(e){ if(!(e.id in state.settings.targets)) state.settings.targets[e.id]=e.def; });
+    saveState(); renderAll(); toast('復元しました'); }
+  catch(e){ toast('読み込めませんでした'); }
+};
+
+function show(v){
+  document.querySelectorAll('.view').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.v===v); });
+  if(v==='week') renderWeek();
+  if(v==='trends') renderTrends();
+  if(v==='set') renderSettings();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.nav-btn').forEach(function(b){ b.onclick=function(){ show(b.dataset.v); }; });
+
+document.getElementById('prevDay').onclick=function(){ cursor.setDate(cursor.getDate()-1); renderToday(); };
+document.getElementById('nextDay').onclick=function(){ var t=new Date(); t.setHours(0,0,0,0); if(ymd(cursor)<ymd(t)){ cursor.setDate(cursor.getDate()+1); renderToday(); } };
+document.getElementById('wPrev').onclick=function(){ weekOffset--; renderWeek(); };
+document.getElementById('wNext').onclick=function(){ if(weekOffset<0){ weekOffset++; renderWeek(); } };
+
+function renderAll(){ renderToday(); }
+renderAll();
+</script>
+</body>
+</html>
